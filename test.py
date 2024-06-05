@@ -137,8 +137,6 @@ app.layout = html.Div([
         html.Img(id='word-cloud')
     ]),
 
-    dcc.Graph(id='sankey-diagram'),
-
     dash_table.DataTable(
         id='data-table',
         columns=[{"name": i, "id": i} for i in sales_over_time.columns],
@@ -152,8 +150,7 @@ app.layout = html.Div([
 @app.callback(
     [Output('dashboard', 'figure'),
      Output('data-table', 'data'),
-     Output('word-cloud', 'src'),
-     Output('sankey-diagram', 'figure')],
+     Output('word-cloud', 'src')],
     [Input('payment-filter', 'value'),
      Input('month-filter', 'value'),
      Input('time-of-sale-filter', 'value'),
@@ -340,21 +337,19 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
 
     # Sankey Diagram
     sankey_data = filtered_data.groupby(['item_name', 'item_type', 'transaction_type']).size().reset_index(name='count')
-    all_nodes = list(sankey_data['item_name'].unique()) + list(sankey_data['item_type'].unique()) + list(sankey_data['transaction_type'].unique())
-    node_indices = {node: i for i, node in enumerate(all_nodes)}
     sankey_fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=15,
             thickness=20,
             line=dict(color='black', width=0.5),
-            label=all_nodes,
+            label=list(sankey_data['item_name'].unique()) + list(sankey_data['item_type'].unique()) + list(sankey_data['transaction_type'].unique()),
             color='blue'
         ),
         link=dict(
-            source=[node_indices[item] for item in sankey_data['item_name']] + 
-                   [node_indices[item] for item in sankey_data['item_type']],
-            target=[node_indices[item] for item in sankey_data['item_type']] + 
-                   [node_indices[item] for item in sankey_data['transaction_type']],
+            source=[sankey_data[sankey_data['item_name'] == item]['item_name'].index[0] for item in sankey_data['item_name']] + 
+                   [len(sankey_data['item_name'].unique()) + sankey_data[sankey_data['item_type'] == item]['item_type'].index[0] for item in sankey_data['item_type']],
+            target=[len(sankey_data['item_name'].unique()) + sankey_data[sankey_data['item_type'] == item]['item_type'].index[0] for item in sankey_data['item_type']] + 
+                   [len(sankey_data['item_name'].unique()) + len(sankey_data['item_type'].unique()) + sankey_data[sankey_data['transaction_type'] == item]['transaction_type'].index[0] for item in sankey_data['transaction_type']],
             value=sankey_data['count'].tolist() * 2
         )
     )])
@@ -369,7 +364,7 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
         subplot_titles=("Sales Trends", "Payment Methods", "Staff Performance", "Customer Preferences", "Item Popularity Heatmap", "High-Revenue Items"),
         specs=[[{"type": "scatter"}, {"type": "pie"}],
                [{"type": "bar"}, {"type": "bar"}],
-               [{"type": "scatter"}, {"type": "scatter"}]]
+               [{"colspan": 2}, None]]
     )
 
     # Add traces
@@ -384,7 +379,9 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
     for trace in heatmap_fig.data:
         fig.add_trace(trace, row=3, col=1)
     for trace in bubble_fig.data:
-        fig.add_trace(trace, row=3, col=2)
+        fig.add_trace(trace, row=3, col=1)
+    for trace in sankey_fig.data:
+        fig.add_trace(trace, row=3, col=1)
 
     # Update layout
     fig.update_layout(
@@ -394,7 +391,7 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
         template='plotly_white'
     )
 
-    return fig, filtered_data.to_dict('records'), 'data:image/png;base64,{}'.format(wordcloud_base64), sankey_fig
+    return fig, filtered_data.to_dict('records'), 'data:image/png;base64,{}'.format(wordcloud_base64)
 
 
 if __name__ == '__main__':
