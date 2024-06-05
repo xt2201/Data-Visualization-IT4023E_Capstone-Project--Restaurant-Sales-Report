@@ -69,7 +69,7 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Label('Time'),
+            html.Label('Month'),
             dcc.Dropdown(
                 id='month-filter',
                 options=[{'label': 'All the time', 'value': 'All the time'}] +
@@ -156,12 +156,26 @@ app.layout = html.Div([
     ], style={'margin-bottom': '20px'}),
 
     html.Div([
-        dcc.Graph(id='dashboard'),
+        html.Label('Select Chart to Display'),
+        dcc.Dropdown(
+            id='chart-filter',
+            options=[
+                {'label': 'Sales Trends', 'value': 'sales_trends'},
+                {'label': 'Payment Methods', 'value': 'payment_methods'},
+                {'label': 'Staff Performance', 'value': 'staff_performance'},
+                {'label': 'Customer Preferences', 'value': 'customer_preferences'},
+                {'label': 'Item Popularity Heatmap', 'value': 'item_popularity'},
+                {'label': 'High-Revenue Items', 'value': 'high_revenue_items'},
+                {'label': 'Sankey Diagram', 'value': 'sankey_diagram'}
+            ],
+            value='sales_trends',
+            clearable=False,
+            style={'width': '400px', 'margin-bottom': '20px'}
+        ),
     ]),
 
     html.Div([
-        html.H3('Sankey Diagram: Flow of Orders from Items to Types and Payment Methods'),
-        dcc.Graph(id='sankey-diagram'),
+        dcc.Graph(id='dashboard'),
     ]),
 
     dash_table.DataTable(
@@ -179,17 +193,17 @@ app.layout = html.Div([
 
 @app.callback(
     [Output('dashboard', 'figure'),
-     Output('data-table', 'data'),
-     Output('sankey-diagram', 'figure')],
+     Output('data-table', 'data')],
     [Input('payment-filter', 'value'),
      Input('month-filter', 'value'),
      Input('time-of-sale-filter', 'value'),
      Input('item-type-filter', 'value'),
      Input('item-name-filter', 'value'),
      Input('transaction-amount-slider', 'value'),
-     Input('quantity-slider', 'value')]
+     Input('quantity-slider', 'value'),
+     Input('chart-filter', 'value')]
 )
-def update_dashboard(selected_payment_methods, selected_month, selected_times, selected_item_types, selected_item_names, selected_transaction_amount, selected_quantity):
+def update_dashboard(selected_payment_methods, selected_month, selected_times, selected_item_types, selected_item_names, selected_transaction_amount, selected_quantity, selected_chart):
     filtered_data = sales_over_time[sales_over_time['transaction_type'].isin(selected_payment_methods)]
 
     if selected_month != 'All the time':
@@ -209,14 +223,31 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
     monthly_sales['year_month'] = pd.to_datetime(monthly_sales['year_month'], format='%Y-%m')
     monthly_sales['3month_moving_average'] = monthly_sales['transaction_amount'].rolling(window=3).mean()
 
+    # Calculate IQR for transaction amounts
+    Q1 = monthly_sales['transaction_amount'].quantile(0.25)
+    Q3 = monthly_sales['transaction_amount'].quantile(0.75)
+    IQR = Q3 - Q1
+
+    # Determine y-axis range based on IQR
+    y_min = Q1 - 1.5 * IQR
+    y_max = Q3 + 1.5 * IQR
+
     # Create a figure for sales trends
-    sales_trends_fig = go.Figure()
+    sales_trends_fig = make_subplots(specs=[[{"secondary_y": False}]])
+
+    # Add monthly sales trace
     sales_trends_fig.add_trace(
-        go.Scatter(x=monthly_sales['year_month'], y=monthly_sales['transaction_amount'], mode='lines+markers', name='Monthly Sales', line=dict(color='royalblue'))
+        go.Scatter(x=monthly_sales['year_month'], y=monthly_sales['transaction_amount'], mode='lines+markers', name='Monthly Sales'),
+        secondary_y=False,
     )
+
+    # Add 3-month Moving Average trace
     sales_trends_fig.add_trace(
-        go.Scatter(x=monthly_sales['year_month'], y=monthly_sales['3month_moving_average'], mode='lines', name='3-month Moving Average', line=dict(color='orange'))
+        go.Scatter(x=monthly_sales['year_month'], y=monthly_sales['3month_moving_average'], mode='lines', name='3-month Moving Average'),
+        secondary_y=False,
     )
+
+    # Adding the highest sales annotation
     max_month = monthly_sales.loc[monthly_sales['transaction_amount'].idxmax()]['year_month']
     max_amount = monthly_sales['transaction_amount'].max()
     sales_trends_fig.add_annotation(
@@ -226,8 +257,10 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
         showarrow=True,
         arrowhead=2,
         ax=20,
-        ay=-40
+        ay=-80  # Adjusted position
     )
+
+    # Update layout
     sales_trends_fig.update_layout(
         title_text='Sales Trends Month by Month',
         xaxis_title='Month',
@@ -240,11 +273,13 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
             ticktext=monthly_sales['year_month'].dt.strftime('%Y-%m'),
             dtick="M1",
             tickformat="%Y-%m",
-            tickangle=-45
+            tickangle=-45,
+            range=[monthly_sales['year_month'].min(), monthly_sales['year_month'].max()]
         ),
         yaxis=dict(
-            range=[monthly_sales['transaction_amount'].min(), monthly_sales['transaction_amount'].max()]
-        )
+            range=[y_min, y_max]
+        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
     )
 
     # Payment Methods
@@ -392,38 +427,21 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
         template='plotly_white'
     )
 
-    # Combine all figures into one dashboard
-    fig = make_subplots(
-        rows=3, cols=2,
-        subplot_titles=("Sales Trends", "Payment Methods", "Staff Performance", "Customer Preferences", "Item Popularity Heatmap", "High-Revenue Items"),
-        specs=[[{"type": "scatter"}, {"type": "pie"}],
-               [{"type": "bar"}, {"type": "bar"}],
-               [{"type": "scatter"}, {"type": "scatter"}]]
-    )
+    # Create a dictionary to map chart names to their corresponding figures
+    chart_mapping = {
+        'sales_trends': sales_trends_fig,
+        'payment_methods': payment_method_fig,
+        'staff_performance': staff_performance_fig,
+        'customer_preferences': item_preferences_fig,
+        'item_popularity': heatmap_fig,
+        'high_revenue_items': bubble_fig,
+        'sankey_diagram': sankey_fig
+    }
 
-    # Add traces
-    for trace in sales_trends_fig.data:
-        fig.add_trace(trace, row=1, col=1)
-    for trace in payment_method_fig.data:
-        fig.add_trace(trace, row=1, col=2)
-    for trace in staff_performance_fig.data:
-        fig.add_trace(trace, row=2, col=1)
-    for trace in item_preferences_fig.data:
-        fig.add_trace(trace, row=2, col=2)
-    for trace in heatmap_fig.data:
-        fig.add_trace(trace, row=3, col=1)
-    for trace in bubble_fig.data:
-        fig.add_trace(trace, row=3, col=2)
+    # Select the figure based on the user's selection
+    selected_fig = chart_mapping[selected_chart]
 
-    # Update layout
-    fig.update_layout(
-        title_text='Restaurant Sales Dashboard',
-        showlegend=False,
-        height=900,
-        template='plotly_white'
-    )
-
-    return fig, filtered_data.to_dict('records'), sankey_fig
+    return selected_fig, filtered_data.to_dict('records')
 
 @app.callback(
     Output("download-dataframe-csv", "data"),
