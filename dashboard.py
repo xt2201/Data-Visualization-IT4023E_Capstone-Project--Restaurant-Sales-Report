@@ -67,7 +67,7 @@ app.layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Label('Filter by Month'),
+            html.Label('Month'),
             dcc.Dropdown(
                 id='month-filter',
                 options=[{'label': 'All the time', 'value': 'All the time'}] +
@@ -79,7 +79,7 @@ app.layout = html.Div([
         ], style={'display': 'inline-block', 'margin-right': '10px'}),
 
         html.Div([
-            html.Label('Filter by Time of Sale'),
+            html.Label('Time of Sale'),
             dcc.Dropdown(
                 id='time-of-sale-filter',
                 options=[{'label': time, 'value': time} for time in time_of_sale_order],
@@ -91,7 +91,7 @@ app.layout = html.Div([
         ], style={'display': 'inline-block', 'margin-right': '10px'}),
 
         html.Div([
-            html.Label('Filter by Item Type'),
+            html.Label('Item Type'),
             dcc.Dropdown(
                 id='item-type-filter',
                 options=[{'label': item_type, 'value': item_type} for item_type in sales_over_time['item_type'].unique()],
@@ -103,7 +103,7 @@ app.layout = html.Div([
         ], style={'display': 'inline-block', 'margin-right': '10px'}),
 
         html.Div([
-            html.Label('Filter by Item Name'),
+            html.Label('Item Name'),
             dcc.Dropdown(
                 id='item-name-filter',
                 options=[{'label': name, 'value': name} for name in sales_over_time['item_name'].unique()],
@@ -115,7 +115,7 @@ app.layout = html.Div([
         ], style={'display': 'inline-block', 'margin-right': '10px'}),
 
         html.Div([
-            html.Label('Filter by Payment Method'),
+            html.Label('Payment Method'),
             dcc.Dropdown(
                 id='payment-filter',
                 options=[{'label': method, 'value': method} for method in sales_over_time['transaction_type'].unique()],
@@ -128,7 +128,7 @@ app.layout = html.Div([
     ], style={'display': 'flex', 'flex-wrap': 'wrap'}),
 
     html.Div([
-        html.Label('Filter by Transaction Amount'),
+        html.Label('Transaction Amount'),
         dcc.RangeSlider(
             id='transaction-amount-slider',
             min=sales_over_time['transaction_amount'].min(),
@@ -141,7 +141,7 @@ app.layout = html.Div([
     ], style={'margin-bottom': '20px'}),
 
     html.Div([
-        html.Label('Filter by Quantity'),
+        html.Label('Quantity'),
         dcc.RangeSlider(
             id='quantity-slider',
             min=sales_over_time['quantity'].min(),
