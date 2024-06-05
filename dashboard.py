@@ -42,14 +42,14 @@ total_sales = sales_over_time['transaction_amount'].sum()
 average_transaction_amount = sales_over_time['transaction_amount'].mean()
 number_of_transactions = sales_over_time['order_id'].nunique()
 
-# Define the color palette
+# Define the monochromatic color palette
 color_palette = {
-    'primary': '#636EFA',  # Plotly Blue
-    'secondary': '#EF553B',  # Plotly Red
-    'accent': '#00CC96',  # Plotly Green
-    'neutral': '#F4F4F4',  # Light gray
-    'background': '#FFFFFF',  # White
-    'categories': px.colors.qualitative.Plotly  # Plotly qualitative colors for categories
+    'primary': '#1f77b4',  # Dark blue
+    'secondary': '#aec7e8',  # Light blue
+    'accent': '#ffbb78',  # Light orange
+    'neutral': '#dcdcdc',  # Light gray
+    'background': '#ffffff',  # White
+    'categories': ['#1f77b4', '#aec7e8', '#ffbb78', '#ff7f0e', '#2ca02c']  # Different shades for categories
 }
 
 # Create Sales Trends Figures
@@ -165,13 +165,17 @@ day_of_week_fig = px.bar(
 )
 day_of_week_fig.update_layout(plot_bgcolor=color_palette['background'])
 
+# Create the heatmap data
+heatmap_data = sales_over_time.pivot_table(index='time_of_sale', columns='item_name', values='quantity', aggfunc='sum', fill_value=0, observed=False).reset_index().melt(id_vars='time_of_sale', value_vars=sales_over_time['item_name'].unique())
+
+# Create the heatmap figure
 heatmap_fig = px.density_heatmap(
-    sales_over_time,
+    heatmap_data,
     x='item_name',
     y='time_of_sale',
-    z='quantity',
+    z='value',
     title='Item Popularity Heatmap',
-    color_continuous_scale=px.colors.sequential.Viridis
+    color_continuous_scale=px.colors.sequential.Blues
 )
 heatmap_fig.update_layout(plot_bgcolor=color_palette['background'])
 
@@ -214,17 +218,17 @@ app.layout = html.Div([
         html.Div([
             html.Label('Total Sales', style={'fontSize': 30}),
             html.Div(f"${total_sales:,.2f}", style={'fontSize': 50, 'color': color_palette['primary']}),
-        ], style={'textAlign': 'center', 'margin': '10px'}),
+        ], style={'textAlign': 'center', 'margin': '10px', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
         
         html.Div([
             html.Label('Average Transaction Amount', style={'fontSize': 30}),
             html.Div(f"${average_transaction_amount:,.2f}", style={'fontSize': 50, 'color': color_palette['secondary']}),
-        ], style={'textAlign': 'center', 'margin': '10px'}),
+        ], style={'textAlign': 'center', 'margin': '10px', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
         
         html.Div([
             html.Label('Number of Transactions', style={'fontSize': 30}),
             html.Div(f"{number_of_transactions:,}", style={'fontSize': 50, 'color': color_palette['accent']}),
-        ], style={'textAlign': 'center', 'margin': '10px'}),
+        ], style={'textAlign': 'center', 'margin': '10px', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
     ], style={'display': 'flex', 'justify-content': 'center', 'margin-bottom': '20px'}),
 
     html.Div([
@@ -305,32 +309,32 @@ app.layout = html.Div([
                 clearable=False
             ),
         ], style={'margin': '20px'}),
-    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center'}),
+    ], style={'display': 'flex', 'flex-wrap': 'wrap', 'justify-content': 'center', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
 
     html.Div([
         html.Div([
             dcc.Graph(id='sales-trends-over-time'),
-        ], style={'gridColumn': '1 / span 2'}),
+        ], style={'gridColumn': '1 / span 2', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
         
         html.Div([
             dcc.Graph(id='payment-methods', figure=payment_method_fig),
-        ], style={'gridColumn': '3'}),
-        
-        html.Div([
-            dcc.Graph(id='item-popularity-heatmap', figure=heatmap_fig),
-        ], style={'gridColumn': '1 / span 3'}),
+        ], style={'gridColumn': '3', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
         
         html.Div([
             dcc.Graph(id='top-selling-items', figure=item_preferences_fig),
-        ], style={'gridColumn': '1 / span 2'}),
+        ], style={'gridColumn': '1 / span 2', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
         
         html.Div([
             dcc.Graph(id='high-revenue-items', figure=high_revenue_items_fig),
-        ], style={'gridColumn': '3'}),
+        ], style={'gridColumn': '3', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
+        
+        html.Div([
+            dcc.Graph(id='item-popularity-heatmap', figure=heatmap_fig),
+        ], style={'gridColumn': '1 / span 3', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
         
         html.Div([
             dcc.Graph(id='sankey-diagram', figure=sankey_fig),
-        ], style={'gridColumn': '1 / span 3'}),
+        ], style={'gridColumn': '1 / span 3', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
     ], style={'display': 'grid', 'gridTemplateColumns': 'repeat(3, 1fr)', 'gridGap': '20px'}),
     
     dash_table.DataTable(
