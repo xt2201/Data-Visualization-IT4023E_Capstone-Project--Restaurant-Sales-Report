@@ -222,12 +222,12 @@ app.layout = html.Div([
         
         html.Div([
             html.Label('Average Transaction Amount', style={'fontSize': 30}),
-            html.Div(f"${average_transaction_amount:,.2f}", style={'fontSize': 50, 'color': color_palette['secondary']}),
+            html.Div(f"${average_transaction_amount:,.2f}", style={'fontSize': 50, 'color': color_palette['primary']}),
         ], style={'textAlign': 'center', 'margin': '10px', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
         
         html.Div([
             html.Label('Number of Transactions', style={'fontSize': 30}),
-            html.Div(f"{number_of_transactions:,}", style={'fontSize': 50, 'color': color_palette['accent']}),
+            html.Div(f"{number_of_transactions:,}", style={'fontSize': 50, 'color': color_palette['primary']}),
         ], style={'textAlign': 'center', 'margin': '10px', 'border': '1px solid #dcdcdc', 'padding': '10px', 'backgroundColor': '#f9f9f9'}),
     ], style={'display': 'flex', 'justify-content': 'center', 'margin-bottom': '20px'}),
 
