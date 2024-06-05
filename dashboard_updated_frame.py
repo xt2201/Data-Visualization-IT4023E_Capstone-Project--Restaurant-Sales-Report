@@ -2,11 +2,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import dcc, html, Dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash import dash_table
 from plotly.subplots import make_subplots
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
 import io
 import base64
 
@@ -70,74 +68,101 @@ app.layout = html.Div([
     html.H1('Restaurant Sales Dashboard'),
 
     html.Div([
-        html.Label('Filter by Month'),
-        dcc.Dropdown(
-            id='month-filter',
-            options=[{'label': 'All the time', 'value': 'All the time'}] +
-                    [{'label': str(month), 'value': str(month)} for month in sales_over_time['year_month'].unique()],
-            value='All the time',
-            clearable=False,
-            style={'width': '400px', 'margin-bottom': '10px'}
-        ),
-    ]),
+        html.Div([
+            html.Label('Time'),
+            dcc.Dropdown(
+                id='month-filter',
+                options=[{'label': 'All the time', 'value': 'All the time'}] +
+                        [{'label': str(month), 'value': str(month)} for month in sales_over_time['year_month'].unique()],
+                value='All the time',
+                clearable=False,
+                style={'width': '200px', 'margin-bottom': '10px'}
+            ),
+        ], style={'display': 'inline-block', 'margin-right': '10px'}),
+
+        html.Div([
+            html.Label('Time of Sale'),
+            dcc.Dropdown(
+                id='time-of-sale-filter',
+                options=[{'label': time, 'value': time} for time in time_of_sale_order],
+                value=time_of_sale_order,
+                multi=True,
+                clearable=False,
+                style={'width': '200px', 'margin-bottom': '10px'}
+            ),
+        ], style={'display': 'inline-block', 'margin-right': '10px'}),
+
+        html.Div([
+            html.Label('Item Type'),
+            dcc.Dropdown(
+                id='item-type-filter',
+                options=[{'label': item_type, 'value': item_type} for item_type in sales_over_time['item_type'].unique()],
+                value=sales_over_time['item_type'].unique().tolist(),
+                multi=True,
+                clearable=False,
+                style={'width': '200px', 'margin-bottom': '10px'}
+            ),
+        ], style={'display': 'inline-block', 'margin-right': '10px'}),
+
+        html.Div([
+            html.Label('Item Name'),
+            dcc.Dropdown(
+                id='item-name-filter',
+                options=[{'label': name, 'value': name} for name in sales_over_time['item_name'].unique()],
+                value=sales_over_time['item_name'].unique().tolist(),
+                multi=True,
+                clearable=False,
+                style={'width': '200px', 'margin-bottom': '10px'}
+            ),
+        ], style={'display': 'inline-block', 'margin-right': '10px'}),
+
+        html.Div([
+            html.Label('Payment Method'),
+            dcc.Dropdown(
+                id='payment-filter',
+                options=[{'label': method, 'value': method} for method in sales_over_time['transaction_type'].unique()],
+                value=sales_over_time['transaction_type'].unique().tolist(),
+                multi=True,
+                clearable=False,
+                style={'width': '200px', 'margin-bottom': '10px'}
+            ),
+        ], style={'display': 'inline-block'}),
+    ], style={'display': 'flex', 'flex-wrap': 'wrap'}),
 
     html.Div([
-        html.Label('Filter by Time of Sale'),
-        dcc.Dropdown(
-            id='time-of-sale-filter',
-            options=[{'label': time, 'value': time} for time in time_of_sale_order],
-            value=time_of_sale_order,
-            multi=True,
-            clearable=False,
-            style={'width': '400px', 'margin-bottom': '10px'}
+        html.Label('Transaction Amount'),
+        dcc.RangeSlider(
+            id='transaction-amount-slider',
+            min=sales_over_time['transaction_amount'].min(),
+            max=sales_over_time['transaction_amount'].max(),
+            step=1,
+            value=[sales_over_time['transaction_amount'].min(), sales_over_time['transaction_amount'].max()],
+            marks={int(sales_over_time['transaction_amount'].min()): str(int(sales_over_time['transaction_amount'].min())),
+                   int(sales_over_time['transaction_amount'].max()): str(int(sales_over_time['transaction_amount'].max()))}
         ),
-    ]),
+    ], style={'margin-bottom': '20px'}),
 
     html.Div([
-        html.Label('Filter by Item Type'),
-        dcc.Dropdown(
-            id='item-type-filter',
-            options=[{'label': item_type, 'value': item_type} for item_type in sales_over_time['item_type'].unique()],
-            value=sales_over_time['item_type'].unique().tolist(),
-            multi=True,
-            clearable=False,
-            style={'width': '400px', 'margin-bottom': '10px'}
+        html.Label('Quantity'),
+        dcc.RangeSlider(
+            id='quantity-slider',
+            min=sales_over_time['quantity'].min(),
+            max=sales_over_time['quantity'].max(),
+            step=1,
+            value=[sales_over_time['quantity'].min(), sales_over_time['quantity'].max()],
+            marks={int(sales_over_time['quantity'].min()): str(int(sales_over_time['quantity'].min())),
+                   int(sales_over_time['quantity'].max()): str(int(sales_over_time['quantity'].max()))}
         ),
-    ]),
-
-    html.Div([
-        html.Label('Filter by Item Name'),
-        dcc.Dropdown(
-            id='item-name-filter',
-            options=[{'label': name, 'value': name} for name in sales_over_time['item_name'].unique()],
-            value=sales_over_time['item_name'].unique().tolist(),
-            multi=True,
-            clearable=False,
-            style={'width': '400px', 'margin-bottom': '10px'}
-        ),
-    ]),
-
-    html.Div([
-        html.Label('Filter by Payment Method'),
-        dcc.Dropdown(
-            id='payment-filter',
-            options=[{'label': method, 'value': method} for method in sales_over_time['transaction_type'].unique()],
-            value=sales_over_time['transaction_type'].unique().tolist(),
-            multi=True,
-            clearable=False,
-            style={'width': '400px', 'margin-bottom': '10px'}
-        ),
-    ]),
+    ], style={'margin-bottom': '20px'}),
 
     html.Div([
         dcc.Graph(id='dashboard'),
     ]),
 
     html.Div([
-        html.Img(id='word-cloud')
+        html.H3('Sankey Diagram: Flow of Orders from Items to Types and Payment Methods'),
+        dcc.Graph(id='sankey-diagram'),
     ]),
-
-    dcc.Graph(id='sankey-diagram'),
 
     dash_table.DataTable(
         id='data-table',
@@ -146,21 +171,25 @@ app.layout = html.Div([
         style_table={'height': '400px', 'overflowY': 'auto'},
         style_cell={'textAlign': 'left', 'padding': '5px'},
         style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'}
-    )
+    ),
+    
+    html.Button("Download Data", id="download-button"),
+    dcc.Download(id="download-dataframe-csv")
 ])
 
 @app.callback(
     [Output('dashboard', 'figure'),
      Output('data-table', 'data'),
-     Output('word-cloud', 'src'),
      Output('sankey-diagram', 'figure')],
     [Input('payment-filter', 'value'),
      Input('month-filter', 'value'),
      Input('time-of-sale-filter', 'value'),
      Input('item-type-filter', 'value'),
-     Input('item-name-filter', 'value')]
+     Input('item-name-filter', 'value'),
+     Input('transaction-amount-slider', 'value'),
+     Input('quantity-slider', 'value')]
 )
-def update_dashboard(selected_payment_methods, selected_month, selected_times, selected_item_types, selected_item_names):
+def update_dashboard(selected_payment_methods, selected_month, selected_times, selected_item_types, selected_item_names, selected_transaction_amount, selected_quantity):
     filtered_data = sales_over_time[sales_over_time['transaction_type'].isin(selected_payment_methods)]
 
     if selected_month != 'All the time':
@@ -169,6 +198,9 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
     filtered_data = filtered_data[filtered_data['time_of_sale'].isin(selected_times)]
     filtered_data = filtered_data[filtered_data['item_type'].isin(selected_item_types)]
     filtered_data = filtered_data[filtered_data['item_name'].isin(selected_item_names)]
+
+    filtered_data = filtered_data[(filtered_data['transaction_amount'] >= selected_transaction_amount[0]) & (filtered_data['transaction_amount'] <= selected_transaction_amount[1])]
+    filtered_data = filtered_data[(filtered_data['quantity'] >= selected_quantity[0]) & (filtered_data['quantity'] <= selected_quantity[1])]
 
     # Sales Trends Over Time
     monthly_sales = filtered_data.groupby('year_month').agg({
@@ -320,7 +352,8 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
         color='item_name',
         hover_name='item_name',
         labels={'quantity': 'Quantity Sold', 'transaction_amount': 'Transaction Amount'},
-        title='Bubble Chart: High-Revenue Items vs. Frequently Purchased Items'
+        title='Bubble Chart: High-Revenue Items vs. Frequently Purchased Items',
+        color_discrete_sequence=px.colors.qualitative.Bold
     )
     bubble_fig.update_layout(
         template='plotly_white',
@@ -331,36 +364,32 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
         showlegend=False
     )
 
-    # Word Cloud for Item Names
-    wordcloud = WordCloud(width=800, height=400, background_color='white').generate(' '.join(filtered_data['item_name']))
-    img = io.BytesIO()
-    wordcloud.to_image().save(img, format='PNG')
-    img.seek(0)
-    wordcloud_base64 = base64.b64encode(img.getvalue()).decode('utf8')
-
     # Sankey Diagram
     sankey_data = filtered_data.groupby(['item_name', 'item_type', 'transaction_type']).size().reset_index(name='count')
     all_nodes = list(sankey_data['item_name'].unique()) + list(sankey_data['item_type'].unique()) + list(sankey_data['transaction_type'].unique())
     node_indices = {node: i for i, node in enumerate(all_nodes)}
+    colors = px.colors.qualitative.Plotly  # Using Plotly's qualitative color scheme for better distinction
     sankey_fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=15,
             thickness=20,
             line=dict(color='black', width=0.5),
             label=all_nodes,
-            color='blue'
+            color=colors * (len(all_nodes) // len(colors) + 1)
         ),
         link=dict(
             source=[node_indices[item] for item in sankey_data['item_name']] + 
                    [node_indices[item] for item in sankey_data['item_type']],
             target=[node_indices[item] for item in sankey_data['item_type']] + 
                    [node_indices[item] for item in sankey_data['transaction_type']],
-            value=sankey_data['count'].tolist() * 2
+            value=sankey_data['count'].tolist() * 2,
+            color='rgba(31, 119, 180, 0.5)'
         )
     )])
     sankey_fig.update_layout(
         title_text='Sankey Diagram: Flow of Orders from Items to Types and Payment Methods',
-        font=dict(size=10)
+        font=dict(size=10),
+        template='plotly_white'
     )
 
     # Combine all figures into one dashboard
@@ -394,8 +423,17 @@ def update_dashboard(selected_payment_methods, selected_month, selected_times, s
         template='plotly_white'
     )
 
-    return fig, filtered_data.to_dict('records'), 'data:image/png;base64,{}'.format(wordcloud_base64), sankey_fig
+    return fig, filtered_data.to_dict('records'), sankey_fig
 
+@app.callback(
+    Output("download-dataframe-csv", "data"),
+    [Input("download-button", "n_clicks")],
+    prevent_initial_call=True,
+)
+def download_filtered_data(n_clicks):
+    filtered_data = update_dashboard.callback_context.states['data-table.data']
+    df = pd.DataFrame(filtered_data)
+    return dcc.send_data_frame(df.to_csv, "filtered_data.csv")
 
 if __name__ == '__main__':
     app.run_server(debug=True)
